@@ -28,7 +28,7 @@ Pod::Constants - Include constants from POD
  # This is an example of using a closure.  $_ is set to the
  # contents of the paragraph.  In this example, "eval" is
  # used to execute this code at run time.
- $VERSION = 0.12;
+ $VERSION = 0.13;
 
  =head2 Some list
 
@@ -149,7 +149,7 @@ sub command {
 	} else {
 	    # otherwise, it's up to the end of the line
 	    ($lookup, $paragraphs)
-		= ($paragraph =~ m/^\s*(\S.*?)\s*$([\0-\377]*)/m);
+		= ($paragraph =~ m/^\s*(\S[^\n]*?)\s*\n(.*)$/s);
 	}
 
 	# Look for a match by name

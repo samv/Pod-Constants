@@ -1,5 +1,9 @@
 Revision history for Perl extension Pod::Constants.
 
+0.13  Wed Jan 23 16:55:59 GMT 2002
+        - Fixed regular expression bug affecting perl
+          versions <= 5.005.
+
 0.12  Mon Dec 10 16:21:54 GMT 2001
         - Added add_hook and delete_hook function
         - more details on man page

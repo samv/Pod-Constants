@@ -1,3 +1,9 @@
+libpod-constants-perl (0.13-1) unstable; urgency=low
+
+  * Bug fix for perl 5.005
+
+ -- Sam Vilain <sam@hoffman.vilain.net>  Mon, 28 Jan 2002 16:18:41 +0000
+
 libpod-constants-perl (0.12-1) unstable; urgency=low
 
   * Initial Release as debian package
