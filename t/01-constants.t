@@ -40,6 +40,24 @@ use_ok(
 	       },
       );
 
+# try as hard as we can to get the path to perl
+use Config;
+my @PERL = ($Config{perlpath}, $^X);
+if (open MAKEMAKERISAHORRIDHACK, "<t/perlpath") {
+    my $FROM_MAKEMAKER = <MAKEMAKERISAHORRIDHACK>;
+    chomp($FROM_MAKEMAKER);
+    close MAKEMAKERISAHORRIDHACK;
+    push @PERL, $FROM_MAKEMAKER;
+} else {
+    warn "could not open a temporary file saved by Makefile.PL";
+}
+unshift @PERL, $ENV{PERL};
+my $PERL;
+for (@PERL) { defined $_ && ( -x ) && do { $PERL = $_; last } }
+$PERL ||= "perl";
+
+print "perl is $PERL\n";
+
 ok($Pod::Constants::VERSION,
    "Pod::Constants sets its own VERSION");
 
@@ -53,8 +71,8 @@ is($section_2, "42", "with trim from main");
 is($section_3, "STICKY BUD", "sub");
 is($section_4, "hash cookies", "eval");
 is($Cheese::foo, "detcepxe", "From module");
-like(`perl -c t/Cheese.pm 2>&1`, qr/syntax OK/, "perl -c module");
-like(`perl -c t/cheese.pl 2>&1`, qr/syntax OK/, "perl -c script");
+like(`$PERL -c t/Cheese.pm 2>&1`, qr/syntax OK/, "perl -c module");
+like(`$PERL -c t/cheese.pl 2>&1`, qr/syntax OK/, "perl -c script");
 
 # test the examples on the man page :)
 package Pod::Constants;

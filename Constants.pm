@@ -28,7 +28,7 @@ Pod::Constants - Include constants from POD
  # This is an example of using a closure.  $_ is set to the
  # contents of the paragraph.  In this example, "eval" is
  # used to execute this code at run time.
- $VERSION = 0.13;
+ $VERSION = 0.14;
 
  =head2 Some list
 
@@ -84,34 +84,44 @@ use base qw(Pod::Parser Exporter);
 use Data::Dumper;
 use Carp;
 
+use vars qw($VERSION);
+
+# An ugly hack to go from caller() to the relevant parser state
+# variable
+
+my %parsers;
+
 # Global parser state variables; Pod::Constants is NOT re-entrant!
-use vars qw(%wanted_pod_tags %trim $active $VERSION $paragraphs
-	    $DEBUG $trim);
+#use vars qw(%wanted_pod_tags %trim $active $paragraphs
+#            $DEBUG $trim);
 
 sub end_input {
     #my ($parser, $command, $paragraph, $line_num) = (@_);
+    my $parser = shift;
 
-    return unless $active;
+    return unless $parser->{active};
 
-    print "Found end of $active\n" if ($DEBUG);
-    my $whereto = $wanted_pod_tags{$active};
-    print "\$_ will be set to:\n---\n$paragraphs\n---\n" if ($DEBUG);
+    print "Found end of $parser->{active}\n" if ($parser->{DEBUG});
+    my $whereto = $parser->{wanted_pod_tags}->{$parser->{active}};
+    print "\$_ will be set to:\n---\n$parser->{paragraphs}\n---\n"
+	if ($parser->{DEBUG});
 
-    $paragraphs =~ s/^\s*|\s*$//gs if $trim{$active};
+    $parser->{paragraphs} =~ s/^\s*|\s*$//gs
+	if $parser->{trimmed_tags}->{$parser->{active}};
 
     if (ref $whereto eq "CODE") {
-	print "calling sub\n" if $DEBUG;
-	local ($_) = $paragraphs;
+	print "calling sub\n" if $parser->{DEBUG};
+	local ($_) = $parser->{paragraphs};
 	$whereto->();
-	print "done\n" if $DEBUG;
+	print "done\n" if $parser->{DEBUG};
     } elsif (ref $whereto eq "SCALAR") {
-	print "inserting into scalar\n" if $DEBUG;
-	$$whereto = $paragraphs;
+	print "inserting into scalar\n" if $parser->{DEBUG};
+	$$whereto = $parser->{paragraphs};
     } elsif (ref $whereto eq "ARRAY") {
-	print "inserting into array\n" if $DEBUG;
-	@$whereto = split /\n/, $paragraphs;
+	print "inserting into array\n" if $parser->{DEBUG};
+	@$whereto = split /\n/, $parser->{paragraphs};
     } elsif (ref $whereto eq "HASH") {
-	print "inserting into hash\n" if $DEBUG;
+	print "inserting into hash\n" if $parser->{DEBUG};
 	# Oh, sorry, should I be in LISP101?
 	%$whereto = (map { map { s/^\s*|\s*$//g; $_ }
 			       split /=>/, $_ }
@@ -120,67 +130,78 @@ sub end_input {
 			    =>
 			    ( (?:[^=]|=[^>])+ =? )# don't allow more "=>"'s
 			    $/x,
-		     split /\n/, $paragraphs);
+		     split /\n/, $parser->{paragraphs});
     } else { die $whereto }
-    $active = undef;
+    $parser->{active} = undef;
 }
 
 # Pod::Parser overloaded command
 sub command {
     my ($parser, $command, $paragraph, $line_num) = @_;
 
-    end_input() if $active;
+    $paragraph =~ s/(?:\r\n|\n\r)/\n/g;
+
+    print "Got command =$command, $paragraph!!!\n" if $parser->{DEBUG};
+
+    $parser->end_input() if $parser->{active};
 
     my $does_she_want_it_sir;
 
     my ($lookup);
     # first check for a catch-all for this command type
-    if ( exists $wanted_pod_tags{"*$command"} ) {
-	$paragraphs = $paragraph;
-	$active = "*$command";
+    if ( exists $parser->{wanted_pod_tags}->{"*$command"} ) {
+	$parser->{paragraphs} = $paragraph;
+	$parser->{active} = "*$command";
 	$does_she_want_it_sir = "oohw";
 
     } elsif ($command =~ m/^(head\d+|item|(for|begin))$/) {
 	if ( $2 ) {
 	    # if it's a "for" or "begin" section, the title is the
 	    # first word only
-	    ($lookup, $paragraphs) =
+	    ($lookup, $parser->{paragraphs}) =
 		($paragraph =~ m/^\s*(\S*)\s*(.*)/s);
 	} else {
 	    # otherwise, it's up to the end of the line
-	    ($lookup, $paragraphs)
+	    ($lookup, $parser->{paragraphs})
 		= ($paragraph =~ m/^\s*(\S[^\n]*?)\s*\n(.*)$/s);
 	}
 
 	# Look for a match by name
-	if (defined $lookup and exists $wanted_pod_tags{$lookup}) {
-	    print "Found $lookup\n" if ($DEBUG);
-	    $active = $lookup;
+	if (defined $lookup
+	    and exists $parser->{wanted_pod_tags}->{$lookup}) {
+	    print "Found $lookup\n" if ($parser->{DEBUG});
+	    $parser->{active} = $lookup;
 	    $does_she_want_it_sir = "suits you sir";
 	}
 
     } else {
 	# nothing
+	print "Ignoring =$command (not known)\n" if $parser->{DEBUG};
     }
 
     {
 	local $^W = 0;
 	print "Ignoring =$command $paragraph (lookup = $lookup)\n"
-	    if (!$does_she_want_it_sir and $DEBUG)
+	    if (!$does_she_want_it_sir and $parser->{DEBUG})
     }
 }
 
 # Pod::Parser overloaded verbatim
 sub verbatim {
     my ($parser, $paragraph, $line_num) = @_;
+    $paragraph =~ s/(?:\r\n|\n\r)/\n/g;
 
-    if (defined $active) {
-	$paragraphs .= $paragraph;
+    print("Got paragraph: $paragraph<--- ("
+	  .($parser->{active}?"using":"ignoring").")\n")
+	if $parser->{DEBUG};
+
+    if (defined $parser->{active}) {
+	$parser->{paragraphs} .= $paragraph;
     }
 }
 
 # Pod::Parser overloaded textblock
-sub textblock { verbatim @_ }
+sub textblock { goto \&verbatim }
 
 =head1 FUNCTIONS
 
@@ -257,7 +278,7 @@ Here's the procedural equivalent:
 =cut
 
 sub import {
-    my ($class, @args) = (@_);
+    my $class = shift;
 
     # try to guess the source file of the caller
     my $source_file;
@@ -271,7 +292,10 @@ sub import {
 	or croak ("Cannot find source file (guessed $source_file) for"
 		  ." package ".caller());
 
-    import_from_file($source_file, @args);
+    # nasty tricks with the stack so we don't have to be silly with
+    # caller()
+    unshift @_, $source_file;
+    goto \&import_from_file;
 }
 
 =head2 import_from_file($filename, @args)
@@ -285,15 +309,19 @@ sub import_from_file {
     my $filename = shift;
 
     my $parser = __PACKAGE__->new();
+
+    $parser->{wanted_pod_tags} = {};
+    $parser->{trimmed_tags} = {};
+    $parser->{trim_next} = 0;
+    $parser->{DEBUG} = 0;
+    $parser->{active} = undef;
+    $parsers{caller()} = $parser;
+
+    $parser->add_hook(@_);
+
+    print "Opening $filename for reading\n" if $parser->{DEBUG};
     open CLASSFILE, "<$filename"
 	or die ("cannot open $filename for reading; $!");
-
-    %wanted_pod_tags = %trim = ();
-    $trim = $DEBUG = 0;
-
-    $active = undef;
-
-    add_hook(@_);
 
     $parser->parse_from_filehandle(\*CLASSFILE, \*STDOUT);
 
@@ -312,20 +340,30 @@ release.
 =cut
 
 sub add_hook {
+    my $parser;
+    if ( UNIVERSAL::isa($_[0], __PACKAGE__) ) {
+	$parser = shift;
+    } else {
+	$parser = $parsers{caller()}
+	    or die("add_hook called, but don't know what for - "
+		   ."caller = ".caller());
+    }
     while (my ($pod_tag, $var) = splice @_, 0, 2) {
 	#print "$pod_tag: $var\n";
 	if (lc($pod_tag) eq "-trim") {
-	    $trim = $var;
+	    $parser->{trim_next} = $var;
 	} elsif ( lc($pod_tag) eq "-debug" ) {
-	    $DEBUG = $var;
+	    $parser->{DEBUG} = $var;
 	} elsif (lc($pod_tag) eq "-usage") {
 	    # an idea for later - automatic "usage"
 	    #%wanted_pod_tags{@tags}
 	} else {
 	    if ((ref $var) =~ /^(?:SCALAR|CODE|ARRAY|HASH)$/) {
-		print "Will look for $pod_tag.\n" if ($DEBUG);
-		$wanted_pod_tags{$pod_tag} = $var;
-		$trim{$pod_tag} = 1 if $trim;
+		print "Will look for $pod_tag.\n"
+		    if ($parser->{DEBUG});
+		$parser->{wanted_pod_tags}->{$pod_tag} = $var;
+		$parser->{trimmed_tags}->{$pod_tag} = 1
+		    if $parser->{trim_next};
 	    } else {
 		die ("Sorry - need a reference to import POD "
 		     ."sections into, not the scalar value $var"
@@ -342,9 +380,17 @@ Deletes the named hooks.  Companion function to add_hook
 =cut
 
 sub delete_hook {
+    my $parser;
+    if ( UNIVERSAL::isa($_[0], __PACKAGE__) ) {
+	$parser = shift;
+    } else {
+	$parser = $parsers{caller()}
+	    or die("delete_hook called, but don't know what for - "
+		   ."caller = ".caller());
+    }
     while ( my $label = shift ) {
-	delete $wanted_pod_tags{$label};
-	delete $trim{$label};
+	delete $parser->{wanted_pod_tags}->{$label};
+	delete $parser->{trimmed_tags}->{$label};
     }
 }
 
@@ -426,8 +472,6 @@ method seems to break dh-make-perl.
  use Pod::Constants -trim => 1,
      'MODULE RELEASE' => sub { ($VERSION) = m/(\d+\.\d+) or die };
 
-head1 
-
 =head1 AUTHOR
 
 Sam Vilain, <perl@snowcra.sh>
@@ -444,10 +488,11 @@ Would this be useful?
 
  Pod::Constants::import(Foo::SECTION => \$myvar);
 
+Debug output is not very readable
+
 =cut
 
 BEGIN {
-    # 
     Pod::Constants->import
 	    (
 	     SYNOPSIS => sub {

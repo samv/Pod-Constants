@@ -1,5 +1,9 @@
 Revision history for Perl extension Pod::Constants.
 
+0.14  Mon Apr  8 17:34:35 BST 2002
+        - Fixed lack of re-entrancy
+        - Fixed CR/LF handling properly
+
 0.13  Wed Jan 23 16:55:59 GMT 2002
         - Fixed regular expression bug affecting perl
           versions <= 5.005.
