@@ -37,11 +37,12 @@ use 5.004;
 use strict;
 
 use base qw(Pod::Parser Exporter);
+use Data::Dumper;
 
 # Global parser state variables
 use vars qw(%wanted_pod_tags %trim $active $VERSION);
 
-$VERSION = "0.01";
+$VERSION = "0.02";
 
 # Pod::Parser overloaded command
 sub command {
@@ -76,17 +77,22 @@ sub textblock { verbatim @_ }
 sub import {
     my ($class, @args) = (@_);
 
+    # try to guess the source file of the caller
     my $source_file;
-    if (caller eq "main") {
-	$source_file = $0;
-    } else {
+    if (caller ne "main") {
+    	print "Caller: ".caller()."\n";
 	my $module = caller;
 	$module =~ s|::|/|g;
 	$module .= ".pm";
+    	print "module: ".$module."\n";
 	$source_file = $INC{$module};
+    	print "inc(.): ".$source_file."\n";
     }
+    print "\$0: $0\n";
+    $source_file ||= $0;
+    print "final source file: $source_file\n";
 
-    my $parser = __PACKAGE__->new();
+    my $parser = $class->new();
     open CLASSFILE, "<$source_file"
 	or die "cannot open $source_file for reading; $!";
 
@@ -112,6 +118,20 @@ sub import {
 
     close CLASSFILE;
 }
+
+=head1 AUTO MODULE VERSIONS
+
+Put this in your module code for automatic POD/Makefile.PL updating:
+
+   =head2 MODULE RELEASE
+
+   $VERSION = 1.05
+
+   =cut
+
+   use vars qw($VERSION);
+   use Pod::Constants -trim => 1, 'MODULE RELEASE' => \$VERSION;
+   BEGIN { $VERSION =~ s/^\$VERSION\s*=\s*// };
 
 =head1 AUTHOR
 

@@ -4,3 +4,5 @@ Makefile.PL
 MANIFEST
 README
 t/01-constants.t
+t/Cheese.pm
+t/cheese.pl

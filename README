@@ -1,4 +1,4 @@
-Pod::Constants version 0.01
+Pod::Constants version 0.02
 ===========================
 
 Pod::Constants allows you to put constants into your POD, and extract
