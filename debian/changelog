@@ -1,3 +1,10 @@
+libpod-constants-perl (0.14-1) unstable; urgency=low
+
+  * Re-entrancy fix
+  * CR/LF fix
+
+ -- Sam Vilain <sam@vilain.net>  Mon,  8 Apr 2002 18:44:20 +0100
+
 libpod-constants-perl (0.13-1) unstable; urgency=low
 
   * Bug fix for perl 5.005

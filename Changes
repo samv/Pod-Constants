@@ -1,5 +1,8 @@
 Revision history for Perl extension Pod::Constants.
 
+0.15  Mon Apr  8 19:43:38 BST 2002
+	- Really fixed lack of re-entrancy, added test script for same
+
 0.14  Mon Apr  8 17:34:35 BST 2002
         - Fixed lack of re-entrancy
         - Fixed CR/LF handling properly

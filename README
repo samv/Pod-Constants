@@ -1,4 +1,4 @@
-Pod::Constants version 0.14
+Pod::Constants version 0.15
 ===========================
 
 Pod::Constants allows you to extract data from your POD at run-time,
@@ -31,7 +31,7 @@ If you would like to turn this module into a package before you
 install it, type the following:
 
    dpkg-buildpackage -b -uc -rfakeroot
-   dpkg -i ../libpod-constants-perl_0.14-1_all.deb
+   dpkg -i ../libpod-constants-perl_0.15-1_all.deb
 
 COPYRIGHT AND LICENCE
 

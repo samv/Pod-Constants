@@ -28,7 +28,7 @@ Pod::Constants - Include constants from POD
  # This is an example of using a closure.  $_ is set to the
  # contents of the paragraph.  In this example, "eval" is
  # used to execute this code at run time.
- $VERSION = 0.14;
+ $VERSION = 0.15;
 
  =head2 Some list
 
@@ -88,12 +88,7 @@ use vars qw($VERSION);
 
 # An ugly hack to go from caller() to the relevant parser state
 # variable
-
 my %parsers;
-
-# Global parser state variables; Pod::Constants is NOT re-entrant!
-#use vars qw(%wanted_pod_tags %trim $active $paragraphs
-#            $DEBUG $trim);
 
 sub end_input {
     #my ($parser, $command, $paragraph, $line_num) = (@_);
@@ -141,7 +136,8 @@ sub command {
 
     $paragraph =~ s/(?:\r\n|\n\r)/\n/g;
 
-    print "Got command =$command, $paragraph!!!\n" if $parser->{DEBUG};
+    print "Got command =$command, value=$paragraph\n"
+	if $parser->{DEBUG};
 
     $parser->end_input() if $parser->{active};
 
@@ -191,7 +187,7 @@ sub verbatim {
     my ($parser, $paragraph, $line_num) = @_;
     $paragraph =~ s/(?:\r\n|\n\r)/\n/g;
 
-    print("Got paragraph: $paragraph<--- ("
+    print("Got paragraph: $paragraph ("
 	  .($parser->{active}?"using":"ignoring").")\n")
 	if $parser->{DEBUG};
 
@@ -280,6 +276,9 @@ Here's the procedural equivalent:
 sub import {
     my $class = shift;
 
+    # if no args, just return
+    return unless (@_);
+
     # try to guess the source file of the caller
     my $source_file;
     if (caller ne "main") {
@@ -305,6 +304,8 @@ explicitly.
 
 =cut
 
+use IO::Handle;
+
 sub import_from_file {
     my $filename = shift;
 
@@ -319,13 +320,15 @@ sub import_from_file {
 
     $parser->add_hook(@_);
 
-    print "Opening $filename for reading\n" if $parser->{DEBUG};
-    open CLASSFILE, "<$filename"
+    print "Pod::Parser: DEBUG: Opening $filename for reading\n"
+	if $parser->{DEBUG};
+    my $fh = new IO::Handle;
+    open $fh, "<$filename"
 	or die ("cannot open $filename for reading; $!");
 
-    $parser->parse_from_filehandle(\*CLASSFILE, \*STDOUT);
+    $parser->parse_from_filehandle($fh, \*STDOUT);
 
-    close CLASSFILE;
+    close $fh;
 }
 
 =head2 add_hook(NAME => value)

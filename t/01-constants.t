@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 use strict;
-use Test::More tests => 18;
+use Test::More tests => 20;
 use Data::Dumper;
 
 use vars qw($section_1 $section_2 $section_3 $section_4 %options);
@@ -64,13 +64,17 @@ ok($Pod::Constants::VERSION,
 BEGIN {
     push @INC, "t";
 };
-use Cheese;
+# to avoid a warning
+if ( 0 ) { $Cheese::foo = $ReEntrancyTest::wohoo = $Cheese::quux; }
+eval "use Cheese";
 
 is($section_1, "Legalise Cannabis!\n\n", "no trim from main");
 is($section_2, "42", "with trim from main");
 is($section_3, "STICKY BUD", "sub");
 is($section_4, "hash cookies", "eval");
 is($Cheese::foo, "detcepxe", "From module");
+is($ReEntrancyTest::wohoo, "Re-entrancy works!", "From module");
+is($Cheese::quux, "Blah.", "From module(2)");
 like(`$PERL -c t/Cheese.pm 2>&1`, qr/syntax OK/, "perl -c module");
 like(`$PERL -c t/cheese.pl 2>&1`, qr/syntax OK/, "perl -c script");
 

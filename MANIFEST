@@ -6,6 +6,7 @@ README
 t/01-constants.t
 t/Cheese.pm
 t/cheese.pl
+t/ReEntrancyTest.pm
 debian/control
 debian/rules
 debian/changelog
