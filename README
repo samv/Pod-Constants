@@ -1,8 +1,13 @@
-Pod::Constants version 0.02
+Pod::Constants version 0.10
 ===========================
 
-Pod::Constants allows you to put constants into your POD, and extract
-them out at run-time.
+Pod::Constants allows you to extract data from your POD at run-time,
+meaning you can do things like declare constants in POD and not have
+to update two places at once every time you make a change.
+
+This version adds the ability to read structured data from POD
+sections, as well as insert arbitrary hooks into the extraction of
+data.
 
 INSTALLATION
 

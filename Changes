@@ -1,5 +1,14 @@
 Revision history for Perl extension Pod::Constants.
 
+0.11  Tue Nov 20 18:24:34 GMT 2001
+        - Corrected man page, added section on automatic Makefile.PL
+          generation
+
+0.10  Sat Nov 10 01:14:00 GMT 2001
+        - Added support for importing data into hashes, arrays, and
+          processing with closures.
+        - not released to world at large (man page incorrect)
+
 0.02  Fri Nov  2 04:15:54 GMT 2001
 	- now handles "perl -c Module.pm" properly
 
