@@ -28,7 +28,7 @@ Pod::Constants - Include constants from POD
  # This is an example of using a closure.  $_ is set to the
  # contents of the paragraph.  In this example, "eval" is
  # used to execute this code at run time.
- $VERSION = 0.11;
+ $VERSION = 0.12;
 
  =head2 Some list
 
@@ -84,8 +84,9 @@ use base qw(Pod::Parser Exporter);
 use Data::Dumper;
 use Carp;
 
-# Global parser state variables
-use vars qw(%wanted_pod_tags %trim $active $VERSION $paragraphs $DEBUG);
+# Global parser state variables; Pod::Constants is NOT re-entrant!
+use vars qw(%wanted_pod_tags %trim $active $VERSION $paragraphs
+	    $DEBUG $trim);
 
 sub end_input {
     #my ($parser, $command, $paragraph, $line_num) = (@_);
@@ -95,6 +96,8 @@ sub end_input {
     print "Found end of $active\n" if ($DEBUG);
     my $whereto = $wanted_pod_tags{$active};
     print "\$_ will be set to:\n---\n$paragraphs\n---\n" if ($DEBUG);
+
+    $paragraphs =~ s/^\s*|\s*$//gs if $trim{$active};
 
     if (ref $whereto eq "CODE") {
 	print "calling sub\n" if $DEBUG;
@@ -126,31 +129,44 @@ sub end_input {
 sub command {
     my ($parser, $command, $paragraph, $line_num) = @_;
 
-    $paragraph =~ s/^\s*|\s*$//gs;
     end_input() if $active;
 
     my $does_she_want_it_sir;
-    if ($command =~ m/^(head\d+|item)$/) {
-	if (exists $wanted_pod_tags{$paragraph}) {
-	    print "Found $paragraph\n" if ($DEBUG);
-	    $active = $paragraph;
-	    $paragraphs = undef;
+
+    my ($lookup);
+    # first check for a catch-all for this command type
+    if ( exists $wanted_pod_tags{"*$command"} ) {
+	$paragraphs = $paragraph;
+	$active = "*$command";
+	$does_she_want_it_sir = "oohw";
+
+    } elsif ($command =~ m/^(head\d+|item|(for|begin))$/) {
+	if ( $2 ) {
+	    # if it's a "for" or "begin" section, the title is the
+	    # first word only
+	    ($lookup, $paragraphs) =
+		($paragraph =~ m/^\s*(\S*)\s*(.*)/s);
+	} else {
+	    # otherwise, it's up to the end of the line
+	    ($lookup, $paragraphs)
+		= ($paragraph =~ m/^\s*(\S.*?)\s*$([\0-\377]*)/m);
+	}
+
+	# Look for a match by name
+	if (defined $lookup and exists $wanted_pod_tags{$lookup}) {
+	    print "Found $lookup\n" if ($DEBUG);
+	    $active = $lookup;
 	    $does_she_want_it_sir = "suits you sir";
 	}
-    } elsif ($command =~ m/^(for|begin)$/) {
-	(my $section, $paragraphs) =
-	    ($paragraph =~ m/^\s*(\S*)\s*(.*)/s);
-	if (exists $wanted_pod_tags{$section}) {
-	    print "Found $section\n" if ($DEBUG);
-	    $active = $section;
-	    $does_she_want_it_sir = "suits you sir";
-	}
+
     } else {
 	# nothing
     }
-    {local $^W = 0;
-    print "Ignoring =$command $paragraph\n"
-	if (!$does_she_want_it_sir and $DEBUG)
+
+    {
+	local $^W = 0;
+	print "Ignoring =$command $paragraph (lookup = $lookup)\n"
+	    if (!$does_she_want_it_sir and $DEBUG)
     }
 }
 
@@ -159,7 +175,6 @@ sub verbatim {
     my ($parser, $paragraph, $line_num) = @_;
 
     if (defined $active) {
-	$paragraph =~ s/^\s*|\s*$//gs if $trim{$active};
 	$paragraphs .= $paragraph;
     }
 }
@@ -167,7 +182,80 @@ sub verbatim {
 # Pod::Parser overloaded textblock
 sub textblock { verbatim @_ }
 
-# This function is called when the user "use"'s us.
+=head1 FUNCTIONS
+
+=head2 import(@args)
+
+This function is called when we are "use"'d.  It determines the source
+file by inspecting the value of caller() or $0.
+
+The form of @args is HOOK => $where.
+
+$where may be a scalar reference, in which case the contents of the
+POD section called "HOOK" will be loaded into $where.
+
+$where may be an array reference, in which case the contents of the
+array will be the contents of the POD section called "HOOK", split
+into lines.
+
+$where may be a hash reference, in which case any lines with a "=>"
+symbol present will have everything on the left have side of the =>
+operator as keys and everything on the right as values.  You do not
+need to quote either, nor have trailing commas at the end of the
+lines.
+
+$where may be a code reference (sub { }), in which case the sub is
+called when the hook is encountered.  $_ is set to the value of the
+POD paragraph.
+
+You may also specify the behaviour of whitespace trimming; by default,
+no trimming is done except on the HOOK names.  Setting "-trim => 1"
+turns on a package "global" (until the next time import is called)
+that will trim the $_ sent for processing by the hook processing
+function (be it a given function, or the built-in array/hash
+splitters) for leading and trailing whitespace.
+
+The name of HOOK is matched against any "=head1", "=head2", "=item",
+"=for", "=begin" value.  If you specify the special hooknames "*item",
+"*head1", etc, then you will get a function that is run for every 
+
+Note that the supplied functions for array and hash splitting are
+exactly equivalent to fairly simple Perl blocks:
+
+Array:
+
+  HOOK => sub { @array = split /\n/, $_ }
+
+Hash:
+
+  HOOK => sub {
+  %hash =
+      (map { map { s/^\s+|\s+$//g; $_ } split /=>/, $_ }
+	    (grep m/^
+		    ( (?:[^=]|=[^>])+ )   # scan up to "=>"
+		    =>
+		    ( (?:[^=]|=[^>])+ =? )# don't allow more "=>"'s
+		    $/x, split /\n/, $_));
+  }
+
+Well, they're simple if you can grok map, a regular expression like
+that and a functional programming style.  If you can't I'm sure it is
+probably voodoo to you.
+
+Here's the procedural equivalent:
+
+  HOOK => sub {
+     for my $line (split /\n/, $_) {
+         my ($key, $value, $junk) = split /=>/, $line;
+         next if $junk;
+         $key =~ s/^\s+|\s+$//g
+         $value =~ s/^\s+|\s+$//g
+         $hash{$key} = $value;
+     }
+  },
+
+=cut
+
 sub import {
     my ($class, @args) = (@_);
 
@@ -186,40 +274,78 @@ sub import {
     import_from_file($source_file, @args);
 }
 
+=head2 import_from_file($filename, @args)
+
+Very similar to straight "import", but you specify the source filename
+explicitly.
+
+=cut
+
 sub import_from_file {
-    my ($filename, @what) = (@_);
+    my $filename = shift;
 
     my $parser = __PACKAGE__->new();
     open CLASSFILE, "<$filename"
 	or die ("cannot open $filename for reading; $!");
 
     %wanted_pod_tags = %trim = ();
+    $trim = $DEBUG = 0;
 
     $active = undef;
-    my ($trim, $get_usage);
 
-    # find out what they want imported where
-    while (my ($pod_tag, $var) = splice @what, 0, 2) {
-	if (lc($pod_tag) =~ "-trim") {
-	    $trim = $var;
-	} elsif (lc($pod_tag) =~ "-usage") {
-	    # an idea for later - automatic "usage"
-	    #%wanted_pod_tags{@tags}
-	} else {
-	    if ((ref $var) =~ /^(?:SCALAR|CODE|ARRAY|HASH)$/) {
-		$wanted_pod_tags{$pod_tag} = $var;
-		$trim{$pod_tag} = 1 if $trim;
-	    } else {
-		die ("Sorry - need a plain reference to import POD "
-		     ."sections into, not a ref ".(ref $var)
-		     ." importing $pod_tag into ".caller());
-	    }
-	}
-    }
+    add_hook(@_);
 
     $parser->parse_from_filehandle(\*CLASSFILE, \*STDOUT);
 
     close CLASSFILE;
+}
+
+=head2 add_hook(NAME => value)
+
+This function adds another hook, it is useful for dynamic updating of
+parsing through the document.
+
+For an example, please see t/01-constants.t in the source
+distribution.  More detailed examples will be added in a later
+release.
+
+=cut
+
+sub add_hook {
+    while (my ($pod_tag, $var) = splice @_, 0, 2) {
+	#print "$pod_tag: $var\n";
+	if (lc($pod_tag) eq "-trim") {
+	    $trim = $var;
+	} elsif ( lc($pod_tag) eq "-debug" ) {
+	    $DEBUG = $var;
+	} elsif (lc($pod_tag) eq "-usage") {
+	    # an idea for later - automatic "usage"
+	    #%wanted_pod_tags{@tags}
+	} else {
+	    if ((ref $var) =~ /^(?:SCALAR|CODE|ARRAY|HASH)$/) {
+		print "Will look for $pod_tag.\n" if ($DEBUG);
+		$wanted_pod_tags{$pod_tag} = $var;
+		$trim{$pod_tag} = 1 if $trim;
+	    } else {
+		die ("Sorry - need a reference to import POD "
+		     ."sections into, not the scalar value $var"
+		     ." importing $pod_tag into ".caller());
+	    }
+	}
+    }
+}
+
+=head2 delete_hook(@list)
+
+Deletes the named hooks.  Companion function to add_hook
+
+=cut
+
+sub delete_hook {
+    while ( my $label = shift ) {
+	delete $wanted_pod_tags{$label};
+	delete $trim{$label};
+    }
 }
 
 =head2 CLOSURES AS DESTINATIONS
@@ -239,7 +365,8 @@ Below are some examples.
 
 =head2 Module Makefile.PL maintenance
 
-Tired of keeping those module Makefile.PL's up to date?
+Tired of keeping those module Makefile.PL's up to date?  Note: This
+method seems to break dh-make-perl.
 
 =head2 Example Makefile.PL
 
@@ -255,10 +382,11 @@ Tired of keeping those module Makefile.PL's up to date?
  my ($VERSION, $NAME, $PREREQ_PM, $ABSTRACT, $AUTHOR);
  Pod::Constants::import_from_file 
      (
-      'MyTestModule.pm', -trim => 1,
-      'NAME' => sub { $ABSTRACT=$_; ($NAME) = m/(\S+)/ },
+      'MyTestModule.pm',
       'MODULE RELEASE' => sub { ($VERSION) = m/(\d+\.\d+)/ },
       'DEPENDANCIES' => ($PREREQ_PM = { }),
+       -trim => 1,
+      'NAME' => sub { $ABSTRACT=$_; ($NAME) = m/(\S+)/ },
       'AUTHOR' => \$AUTHOR,
      );
 
@@ -298,7 +426,7 @@ Tired of keeping those module Makefile.PL's up to date?
  use Pod::Constants -trim => 1,
      'MODULE RELEASE' => sub { ($VERSION) = m/(\d+\.\d+) or die };
 
-=head1 
+head1 
 
 =head1 AUTHOR
 

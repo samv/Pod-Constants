@@ -1,10 +1,10 @@
 #!/usr/bin/perl -w
 
 use strict;
-use Test::More tests => 17;
+use Test::More tests => 18;
 use Data::Dumper;
 
-use vars qw($section_1 $section_2 $section_3 $section_4);
+use vars qw($section_1 $section_2 $section_3 $section_4 %options);
 
 use_ok(
        "Pod::Constants",
@@ -13,6 +13,31 @@ use_ok(
        section_2 => \$section_2,
        section_3 => sub { tr/[a-z]/[A-Z]/; $section_3 = $_ },
        section_4 => sub { eval },
+       'command line parameters' => sub {
+	   &Pod::Constants::add_hook
+		   (
+		    #-trim => 0,
+		    '*item' => sub { 
+			my ($options, $description) =
+			    m/^(.*?)\n\n(.*)/s;
+			my (@options, $longest);
+			$longest = "";
+			for my $option
+			    ($options =~ m/\G((?:-\w|--\w+))(?:,\s*)?/g) {
+			    push @options, $option;
+			    if ( length $option > length $longest) {
+				$longest = $option;
+			    }
+			}
+			$longest =~ s/^-*//;
+			$options{$longest} =
+			    {
+			     options => \@options,
+			     description => $description,
+			    };
+		    }
+		   )
+	       },
       );
 
 ok($Pod::Constants::VERSION,
@@ -70,6 +95,8 @@ is($TestManPage::html, '<p>This text will be in $html</p>',
 $TestManPage::myvar = $TestManPage::html = undef;
 @TestManPage::myarray = ();
 
+is($options{foo}->{options}->[0], "-f", "Pod::Constants::add_hook");
+
 =head2 section_1
 
 Legalise Cannabis!
@@ -85,5 +112,19 @@ sticky bud
 =head2 section_4
 
 $section_4 = "hash cookies"
+
+=cut
+
+=head1 command line parameters
+
+the following command line parameters are supported
+
+=item -f, --foo
+
+This does something cool.
+
+=item -h, --help
+
+This also does something pretty cool.
 
 =cut

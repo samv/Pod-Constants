@@ -1,0 +1,19 @@
+Source: libpod-constants-perl
+Section: interpreters
+Priority: optional
+Build-Depends: debhelper (>= 3.0.5), perl (>= 5.6.0-17)
+Maintainer: Sam Vilain <sam@vilain.net>
+Standards-Version: 3.5.1
+
+Package: libpod-constants-perl
+Architecture: all
+Depends: ${perl:Depends}
+Description:  Include constants from POD
+ This module allows you to specify those constants that should be
+ documented in your POD, and pull them out a run time in a fairly
+ arbitrary fashion.
+ .
+ Pod::Constants uses Pod::Parser to do the parsing of the source file.
+ It has to open the source file it is called from, and does so directly
+ either by lookup in %INC or by assuming it is $0 if the caller is
+ "main" (or it can't find %INC{caller()})

@@ -1,4 +1,4 @@
-Pod::Constants version 0.10
+Pod::Constants version 0.12
 ===========================
 
 Pod::Constants allows you to extract data from your POD at run-time,
@@ -22,6 +22,16 @@ DEPENDENCIES
 
 Pod::Parser, 1.13 or better.  That is to say, I haven't tested it on
 any earlier version.
+
+Running the test suite requires Test::Simple 0.18.
+
+INSTALLATION UNDER DEBIAN
+
+If you would like to turn this module into a package before you
+install it, type the following:
+
+   dpkg-buildpackage -b -uc -rfakeroot
+   dpkg -i ../libpod-constants-perl_0.12-1_all.deb
 
 COPYRIGHT AND LICENCE
 

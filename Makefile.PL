@@ -16,7 +16,9 @@ close FOO;
 WriteMakefile(
     'NAME'		=> 'Pod::Constants',
     'VERSION'		=> $VERSION,
-    'PREREQ_PM'		=> { Pod::Parser => 1.13 },
+    'PREREQ_PM'		=> { Pod::Parser => 1.13,
+			     Test::Simple => 0.18,
+			   },
     ($] >= 5.005 ?    ## Add these new keywords supported since 5.005
       (ABSTRACT_FROM => 'Constants.pm', # retrieve abstract from module
        AUTHOR     => 'Sam Vilain <sam@vilain.net>') : ()),

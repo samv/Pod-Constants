@@ -6,3 +6,8 @@ README
 t/01-constants.t
 t/Cheese.pm
 t/cheese.pl
+debian/control
+debian/rules
+debian/changelog
+debian/README.Debian
+debian/copyright

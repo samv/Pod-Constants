@@ -1,5 +1,9 @@
 Revision history for Perl extension Pod::Constants.
 
+0.12  Mon Dec 10 16:21:54 GMT 2001
+        - Added add_hook and delete_hook function
+        - more details on man page
+
 0.11  Tue Nov 20 18:24:34 GMT 2001
         - Corrected man page, added section on automatic Makefile.PL
           generation
