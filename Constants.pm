@@ -478,7 +478,7 @@ method seems to break dh-make-perl.
 
 =head1 AUTHOR
 
-Sam Vilain, <perl@snowcra.sh>
+Sam Vilain, <samv@cpan.org>
 
 =head1 BUGS/TODO
 
@@ -493,6 +493,15 @@ Would this be useful?
  Pod::Constants::import(Foo::SECTION => \$myvar);
 
 Debug output is not very readable
+
+=head1 PATCHES WELCOME
+
+If you have any suggestions for enhancements, they are much more likely
+to happen if you submit them as a patch to the distribution.
+
+Source is kept at
+
+  git://utsl.gen.nz/Pod-Constants 
 
 =cut
 
