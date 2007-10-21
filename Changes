@@ -1,5 +1,10 @@
 Revision history for Perl extension Pod::Constants.
 
+0.16  Sun Oct 21 21:55:59 NZDT 2007
+	- Lots of boring release engineering.  Imported to git, etc.
+	  Removed the debian/ directory.  Updated the license (now not
+	  just Artistic)
+
 0.15  Mon Apr  8 19:43:38 BST 2002
 	- Really fixed lack of re-entrancy, added test script for same
 

@@ -1,6 +1,7 @@
-# Copyright (C) 2001 Sam Vilain.  All Rights Reserved.  This module is
-# free software. It may be used, redistributed and/or modified under the
-# terms of the Perl Artistic License
+# Copyright (C) 2001, 2002, 2007 Sam Vilain.  All Rights Reserved.
+# This module is free software. It may be used, redistributed and/or
+# modified under the terms of the Perl Artistic License, version 2 or
+# later, OR the terms of the GNU General Public License, v3 or later.
 
 package Pod::Constants;
 
@@ -28,7 +29,7 @@ Pod::Constants - Include constants from POD
  # This is an example of using a closure.  $_ is set to the
  # contents of the paragraph.  In this example, "eval" is
  # used to execute this code at run time.
- $VERSION = 0.15;
+ $VERSION = 0.16;
 
  =head2 Some list
 
