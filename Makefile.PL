@@ -29,9 +29,9 @@ my $mm = MM->new({
        AUTHOR     => 'Sam Vilain <sam@vilain.net>') : ()),
 });
 
-if (open MAKEMAKERISAHORRIDHACK, ">t/perlpath") {
-    print MAKEMAKERISAHORRIDHACK $mm->{FULLPERL},"\n";
-    close MAKEMAKERISAHORRIDHACK;
+if (open PERLPATH, ">t/perlpath") {
+    print PERLPATH $^X,"\n";
+    close PERLPATH;
 } else {
     warn("could not open t/perlpath for writing; $!.  It is remotely "
 	 ."possible that some of the test scripts will test against "
