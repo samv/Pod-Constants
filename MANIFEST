@@ -1,9 +1,13 @@
 Changes
 Constants.pm
+Makefile
 Makefile.PL
 MANIFEST
+MYMETA.json
+MYMETA.yml
 README
+SIGNATURE
 t/01-constants.t
-t/Cheese.pm
 t/cheese.pl
+t/Cheese.pm
 t/ReEntrancyTest.pm
