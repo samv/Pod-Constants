@@ -29,7 +29,7 @@ Pod::Constants - Include constants from POD
  # This is an example of using a closure.  $_ is set to the
  # contents of the paragraph.  In this example, "eval" is
  # used to execute this code at run time.
- $VERSION = 0.16;
+ $VERSION = 0.17;
 
  =head2 Some list
 
@@ -86,6 +86,7 @@ use Data::Dumper;
 use Carp;
 
 use vars qw($VERSION);
+$VERSION = 0.17;
 
 # An ugly hack to go from caller() to the relevant parser state
 # variable
