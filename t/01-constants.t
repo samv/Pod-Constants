@@ -51,10 +51,10 @@ BEGIN {
 if ( 0 ) { $Cheese::foo = $ReEntrancyTest::wohoo = $Cheese::quux; }
 eval "use Cheese";
 
-is($section_1, "Legalise Cannabis!\n\n", "no trim from main");
+is($section_1, "Down with Pants!\n\n", "no trim from main");
 is($section_2, "42", "with trim from main");
-is($section_3, "STICKY BUD", "sub");
-is($section_4, "hash cookies", "eval");
+is($section_3, "CLANK_EST", "sub");
+is($section_4, "touche", "eval");
 is($Cheese::foo, "detcepxe", "From module");
 is($ReEntrancyTest::wohoo, "Re-entrancy works!", "From module");
 is($Cheese::quux, "Blah.", "From module(2)");
@@ -104,7 +104,7 @@ is($options{foo}->{options}->[0], "-f", "Pod::Constants::add_hook");
 
 =head2 section_1
 
-Legalise Cannabis!
+Down with Pants!
 
 =head2 section_2
 
@@ -112,11 +112,11 @@ Legalise Cannabis!
 
 =head2 section_3
 
-sticky bud
+clank_est
 
 =head2 section_4
 
-$section_4 = "hash cookies"
+$section_4 = "touche"
 
 =cut
 
